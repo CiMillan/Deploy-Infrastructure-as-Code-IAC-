@@ -10,6 +10,10 @@
 	{
 		"ParameterKey": "InstanceType",
 		"ParameterValue": "t3.medium"
+    },
+	{
+		"ParameterKey": "TopicARN",
+		"ParameterValue": "arn:aws:sns:us-west-2:371740897767:AutoScalingAlert"
     }
 ]
 

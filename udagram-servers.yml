@@ -1,4 +1,4 @@
-Description: >
+Description:
     Cintia Millan / Udacity 2020
     Udagram Project
 
@@ -15,6 +15,11 @@ Parameters:
     InstanceType:
         Description: Specifies the instance type of the EC2 instance
         Type: String
+
+    TopicARN:
+        Description: The Amazon Resource Name (ARN) of the Amazon Simple Notification Service (Amazon SNS) topic
+        Type: String
+
 
 Resources:
 
@@ -41,21 +46,18 @@ Resources:
         FromPort: 80
         ToPort: 80
         CidrIp: 0.0.0.0/0
+
   WebServerSecGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow http to our hosts and SSH from local only
+      GroupDescription: Allow http to our hosts
       VpcId:
         Fn::ImportValue:
           !Sub "${EnvironmentName}-VPCID"
       SecurityGroupIngress:
       - IpProtocol: tcp
-        FromPort: 8080
-        ToPort: 8080
-        CidrIp: 0.0.0.0/0
-      - IpProtocol: tcp
-        FromPort: 22
-        ToPort: 22
+        FromPort: 80
+        ToPort: 80
         CidrIp: 0.0.0.0/0
       SecurityGroupEgress:
       - IpProtocol: tcp
@@ -73,7 +75,7 @@ Resources:
           apt-get install apache2 -y
           systemctl start apache2.service
           cd /var/www/html
-          echo "Udacity Demo Web Server Up and Running!" > index.html
+          echo "it works! Udagram, Udacity" > index.html
       ImageId:
         !Sub "${ImageId}"
       SecurityGroups:
@@ -97,6 +99,15 @@ Resources:
       MaxSize: '5'
       TargetGroupARNs:
       - Ref: WebAppTargetGroup
+      NotificationConfigurations:
+      - TopicARN:
+          !Sub "${TopicARN}"
+        NotificationTypes:
+        - autoscaling:EC2_INSTANCE_LAUNCH
+        - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
+        - autoscaling:EC2_INSTANCE_TERMINATE
+        - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
+        - autoscaling:TEST_NOTIFICATION
 
   WebAppLB:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
@@ -134,52 +145,55 @@ Resources:
   WebAppTargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
     Properties:
-      HealthCheckIntervalSeconds: 10
+      HealthCheckIntervalSeconds: 35
       HealthCheckPath: /
       HealthCheckProtocol: HTTP
-      HealthCheckTimeoutSeconds: 8
+      HealthCheckTimeoutSeconds: 30
       HealthyThresholdCount: 2
-      Port: 8080
+      Port: 80
       Protocol: HTTP
       UnhealthyThresholdCount: 5
       VpcId: 
         Fn::ImportValue:
           Fn::Sub: "${EnvironmentName}-VPCID"
 
+  CPUTooHighAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Average CPU utilization over last 10 minutes higher than 80%
+      Namespace: AWS/EC2
+      MetricName: CPUUtilization
+      Statistic: Average
+      Period: 600
+      EvaluationPeriods: 1
+      ComparisonOperator: GreaterThanThreshold
+      Threshold: 80
+      Dimensions:
+      - Name: AutoScalingGroup
+        Value: !Ref WebAppGroup
+
 Outputs: 
 
     LoadBalancerDNS:
         Description: Public URL of the Load Balancer
-        Value: http://
+        Value: http://http://udagr-webap-mmrmr2lbi7fq-1700353046.us-west-2.elb.amazonaws.com/
         Export:
-          Name: !Sub ${EnvironmentName}-LB-DNS
+          Name: !Sub "${EnvironmentName}-LB-DNS"
 
     LBSecGroup: 
         Description: Load Balancer Security Group
         Value: !Ref LBSecGroup
         Export:
-          Name: !Sub ${EnvironmentName}-LB-SG
+          Name: !Sub "${EnvironmentName}-LB-SG"
 
     WebServerSecGroup: 
         Description: Web Server Security Group
         Value: !Ref WebServerSecGroup
         Export:
-          Name: !Sub ${EnvironmentName}-WS-SG
+          Name: !Sub "${EnvironmentName}-WS-SG"
 
     SecurityGroups:
         Description: A list of the Security Groups
         Value: !Join [ ",", [ !Ref LBSecGroup, !Ref WebServerSecGroup ]]
         Export:
-          Name: !Sub ${EnvironmentName}-SG
-
-    WebAppGroup:
-        Description: Auto Scalling Group
-        Value: !Ref WebAppGroup
-        Export:
-          Name: !Sub ${EnvironmentName}-AS-G
-
-    WebAppTargetGroup:
-        Description: Web App Health Check - ELB Target Group
-        Value: !Ref WebAppTargetGroup
-        Export:
-          Name: !Sub ${EnvironmentName}-ELB-TG
+          Name: !Sub "${EnvironmentName}-SG"
