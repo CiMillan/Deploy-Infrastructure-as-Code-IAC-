@@ -60,6 +60,4 @@ The provided UserData script should help you install all the required dependenci
 
 It's up to you to decide which values should be parameters and which you will hard-code in your script.
 
-See the provided supporting code for help and more clues.
-
 If you want to go the extra mile, set up a bastion host to allow you to SSH into your private subnet servers. This bastion host would be on a Public Subnet with port 22 open only to your home IP address, and it would need to have the private key that you use to access the other servers.
