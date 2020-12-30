@@ -1,4 +1,5 @@
-# Udagram - Udacity Project - Deploy Infrastructure as Code (IAC)
+# Udagram - Udacity Project
+- Deploy Infrastructure as Code (IAC)
 
 # Objective
 
