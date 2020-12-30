@@ -176,7 +176,7 @@ Outputs:
 
     LoadBalancerDNS:
         Description: Public URL of the Load Balancer
-        Value: http://http://udagr-webap-mmrmr2lbi7fq-1700353046.us-west-2.elb.amazonaws.com/
+        Value: Fn::Join: ["", ["http://", !GetAtt WebAppLB.DNSName]]
         Export:
           Name: !Sub "${EnvironmentName}-LB-DNS"
 
